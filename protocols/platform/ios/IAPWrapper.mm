@@ -48,6 +48,35 @@ using namespace cocos2d::plugin;
         PluginUtilsIOS::outputLog("Can't find the C++ object of the IAP plugin");
     }
 }
+
++ (NSString *) priceAsString:(SKProduct*) product
+{
+    NSNumberFormatter *formatter = [[NSNumberFormatter alloc] init];
+    [formatter setFormatterBehavior:NSNumberFormatterBehavior10_4];
+    [formatter setNumberStyle:NSNumberFormatterCurrencyStyle];
+    [formatter setLocale:[product priceLocale]];
+    
+    NSString *str = [formatter stringFromNumber:[product price]];
+    [formatter release];
+    return str;
+}
+
++(NSString*) convertSKProductsToJSON:(NSArray*) products
+{
+    if (products) {
+        NSMutableArray* convertedProducts = [[[NSMutableArray alloc] init] autorelease];
+        for(SKProduct *product in products){
+            NSDictionary* info = [NSDictionary dictionaryWithObjectsAndKeys:product.productIdentifier, @"productIdentifier", product.localizedTitle, @"localizedTitle", product.localizedDescription, @"localizedDescription", [self priceAsString: product], @"localizedPrice", nil];
+            
+            [convertedProducts addObject:info];
+        }
+        
+        return [ParseUtils NSDictionaryToNSString:convertedProducts];
+    }
+    
+    return @"[]";
+}
+                                  
 +(void) onRequestProduct:(id)obj withRet:(ProductRequest) ret withProducts:(NSArray *)products{
     PluginProtocol* plugin = PluginUtilsIOS::getPluginPtr(obj);
     ProtocolIAP* iapPlugin = dynamic_cast<ProtocolIAP*>(plugin);
@@ -68,12 +97,12 @@ using namespace cocos2d::plugin;
             }
             listener->onRequestProductsResult((IAPProductRequest )ret,pdlist);
         }else if(callback){
-            NSString *productInfo =  [ParseUtils NSDictionaryToNSString:products];
+            NSString *productInfo = [self convertSKProductsToJSON: products]; //[ParseUtils NSDictionaryToNSString:products];
             const char *charProductInfo;
-            if(productInfo !=nil){
+            if (productInfo != nil){
                 charProductInfo =[productInfo UTF8String];
             }else{
-                charProductInfo = "parse productInfo fail";
+                charProductInfo = "[]";
             }
             std::string stdstr(charProductInfo);
             callback((IAPProductRequest )ret,stdstr);
