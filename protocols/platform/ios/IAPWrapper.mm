@@ -41,10 +41,12 @@ using namespace cocos2d::plugin;
     PayResultCode cRet = (PayResultCode) ret;
     if (iapPlugin) {
         iapPlugin->onPayResult(cRet, chMsg);
-    }else if(callback){
-        std::string stdmsg(chMsg);
-        callback(cRet,stdmsg);
-    } else {
+        if(callback){
+            std::string stdmsg(chMsg);
+            callback(cRet,stdmsg);
+        }
+    }
+    else {
         PluginUtilsIOS::outputLog("Can't find the C++ object of the IAP plugin");
     }
 }
