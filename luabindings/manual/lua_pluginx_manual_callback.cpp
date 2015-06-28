@@ -775,8 +775,12 @@ int lua_pluginx_protocols_FacebookAgent_login(lua_State* tolua_S)
     argc = lua_gettop(tolua_S)-1;
     do{
         if (argc == 1) {
+#if COCOS2D_DEBUG >= 1
             if (!toluafix_isfunction(tolua_S,2,"LUA_FUNCTION",0,&tolua_err))
-                ok = false;
+            {
+                goto tolua_lerror;
+            }
+#endif
             
             if (!ok) { break; }
             
@@ -797,8 +801,12 @@ int lua_pluginx_protocols_FacebookAgent_login(lua_State* tolua_S)
             ok &= luaval_to_std_string(tolua_S, 2,&arg0, "plugin.FacebookAgent:login");
             
             if (!ok) { break; }
+#if COCOS2D_DEBUG >= 1
             if (!toluafix_isfunction(tolua_S,3,"LUA_FUNCTION",0,&tolua_err))
-                ok = false;
+            {
+                goto tolua_lerror;
+            }
+#endif
             
             if (!ok) { break; }
             
