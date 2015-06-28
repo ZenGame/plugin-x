@@ -44,12 +44,11 @@ extern "C" {
 			{
 				pIAP->onPayResult((PayResultCode) ret, strMsg.c_str());
 			}
-			else
+			
+            if (ProtocolIAP::ProtocolIAPCallback callback = pIAP->getCallback())
 			{
-				ProtocolIAP::ProtocolIAPCallback callback = pIAP->getCallback();
-				if(callback)
-					callback(ret, strMsg);
-			}
+                callback(ret, strMsg);
+            }
 		}
 	}
 
