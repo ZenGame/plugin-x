@@ -20,6 +20,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.json.JSONArray;
+
 /**
  * Represents a block of information about in-app items.
  * An Inventory is returned by such methods as {@link IabHelper#queryInventory}.
@@ -88,4 +92,17 @@ public class Inventory {
     void addPurchase(Purchase p) {
         mPurchaseMap.put(p.getSku(), p);
     }
+    
+	public Map<String, SkuDetails> getAllSkuDetails() {
+		return mSkuMap;
+	}
+	
+	public String getAllSkuJson() throws JSONException {
+		JSONArray array = new JSONArray();
+		for (SkuDetails detail : mSkuMap.values())
+		{
+			array.put(detail.getJsonObj());
+		}
+		return array.toString();
+	}
 }

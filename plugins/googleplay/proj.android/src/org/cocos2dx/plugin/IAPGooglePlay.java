@@ -29,11 +29,16 @@ THE SOFTWARE.
 package org.cocos2dx.plugin;
 
 import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
 
 import org.cocos2dx.plugin.util.IabHelper;
 import org.cocos2dx.plugin.util.IabResult;
 import org.cocos2dx.plugin.util.Inventory;
 import org.cocos2dx.plugin.util.Purchase;
+import org.cocos2dx.plugin.util.SkuDetails;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -42,7 +47,6 @@ import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.util.Log;
-
 
 public class IAPGooglePlay implements InterfaceIAP, PluginListener {
 
@@ -89,10 +93,24 @@ public class IAPGooglePlay implements InterfaceIAP, PluginListener {
         try {
             //String appId = cpInfo.get("GooglePlayAppId");
             final String appKey = cpInfo.get("GooglePlayAppKey");
+            
+            final List<String> additionalSkuList = new ArrayList<String>();
+            Iterator<Map.Entry<String, String>> it = cpInfo.entrySet().iterator();
+            while (it.hasNext())
+            {
+            	  Map.Entry<String, String> entry = it.next();
+
+            	  // Remove entry if key is null or equals 0.
+            	  if (entry.getKey() == null || entry.getKey().startsWith("com.")) {
+            		  Log.w("Add querying SKU: ", entry.getValue());
+            		  additionalSkuList.add(entry.getValue());
+            	  }
+            }
+            
             PluginWrapper.runOnMainThread(new Runnable() {
                 @Override
                 public void run() {
-                    initWithKey(appKey);
+                    initWithKey(appKey, additionalSkuList);
                 }
             });
         } catch (Exception e) {
@@ -174,7 +192,7 @@ public class IAPGooglePlay implements InterfaceIAP, PluginListener {
      * want to make it easy for an attacker to replace the public key with one
      * of their own and then fake messages from the server.
      */
-    public void initWithKey(String base64EncodedPublicKey) {
+    public void initWithKey(String base64EncodedPublicKey, final List<String> additionalSkuList) {
         
         // Create the helper, passing it our context and the public key to verify signatures with
         Log.d(TAG, "Creating IAB helper.");
@@ -196,7 +214,7 @@ public class IAPGooglePlay implements InterfaceIAP, PluginListener {
 
                 // Hooray, IAB is fully set up. Now, let's get an inventory of stuff we own.
                 Log.d(TAG, "Setup successful. Querying inventory.");
-                mHelper.queryInventoryAsync(mGotInventoryListener);
+                mHelper.queryInventoryAsync(true, additionalSkuList, mGotInventoryListener);
             }
         });
         
@@ -222,7 +240,18 @@ public class IAPGooglePlay implements InterfaceIAP, PluginListener {
             Log.d(TAG, "Query inventory was successful.");
 
             //start. you can add you own query code here for flushing if you wish
-
+            String allSkuDetails = "[]";
+            try
+            {
+            	allSkuDetails = inventory.getAllSkuJson();
+            	Log.d(TAG, "All sku details got: " + allSkuDetails);
+            	IAPWrapper.onProductInfo(mAdapter, IAPWrapper.RequestSuccees, allSkuDetails);
+            }
+            catch(Exception e)
+            {
+            	LogE("Can not get sku details from inventory", e);    
+            	IAPWrapper.onProductInfo(mAdapter, IAPWrapper.RequestFail, allSkuDetails);
+            }
             //end
         }
     };
@@ -275,7 +304,7 @@ public class IAPGooglePlay implements InterfaceIAP, PluginListener {
             else {
                 Log.d(TAG,"Success!");
                 
-                succeedPurchase(result.getMessage());
+                succeedPurchase(purchase.getOriginalJson());
 
                 //Auto consume the purchase
                 mHelper.consumeAsync(purchase, mConsumeFinishedListener);

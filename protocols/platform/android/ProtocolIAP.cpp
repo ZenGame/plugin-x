@@ -43,15 +43,38 @@ extern "C" {
 			if (pIAP != NULL)
 			{
 				pIAP->onPayResult((PayResultCode) ret, strMsg.c_str());
+
+                if (ProtocolIAP::ProtocolIAPCallback callback = pIAP->getCallback())
+                {
+                    callback(ret, strMsg);
+                }
 			}
-			
-            if (ProtocolIAP::ProtocolIAPCallback callback = pIAP->getCallback())
-			{
-                callback(ret, strMsg);
-            }
 		}
 	}
 
+    JNIEXPORT void JNICALL Java_org_cocos2dx_plugin_IAPWrapper_nativeOnProductInfo(JNIEnv*  env, jobject thiz, jstring className, jint ret, jstring msg)
+    {
+        std::string strMsg = PluginJniHelper::jstring2string(msg);
+        std::string strClassName = PluginJniHelper::jstring2string(className);
+        PluginProtocol* pPlugin = PluginUtils::getPluginPtr(strClassName);
+        PluginUtils::outputLog("ProtocolIAP", "nativeOnProductInfo(), Get plugin ptr : %p", pPlugin);
+        if (pPlugin != NULL)
+        {
+            PluginUtils::outputLog("ProtocolIAP", "nativeOnProductInfo(), Get plugin name : %s", pPlugin->getPluginName());
+            ProtocolIAP* pIAP = dynamic_cast<ProtocolIAP*>(pPlugin);
+            if (pIAP != NULL)
+            {
+                // TODO: Fix callback function to send real result
+                if (PayResultListener* pListener = pIAP->getResultListener())
+                    pListener->onRequestProductsResult((IAPProductRequest)ret, TProductList());
+
+                if (ProtocolIAP::ProtocolIAPCallback callback = pIAP->getCallback())
+                {
+                    callback(ret, strMsg);
+                }
+            }
+        }
+    }
 }
 
 bool ProtocolIAP::_paying = false;
