@@ -264,7 +264,9 @@ public class IabHelper {
 
         Intent serviceIntent = new Intent("com.android.vending.billing.InAppBillingService.BIND");
         serviceIntent.setPackage("com.android.vending");
-        if (!mContext.getPackageManager().queryIntentServices(serviceIntent, 0).isEmpty()) {
+        // http://stackoverflow.com/questions/20763952/iabhelper-startsetup-causes-nullpointerexception
+        List<ResolveInfo> queryIntentServices = mContext.getPackageManager().queryIntentServices(serviceIntent, 0);
+        if (queryIntentServices != null && !queryIntentServices.isEmpty()) {
             // service available to handle that Intent
             mContext.bindService(serviceIntent, mServiceConn, Context.BIND_AUTO_CREATE);
         }
