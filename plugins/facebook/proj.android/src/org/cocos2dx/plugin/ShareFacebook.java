@@ -123,11 +123,11 @@ public class ShareFacebook implements InterfaceShare{
 
 	@Override
 	public String getSDKVersion() {
-		return Settings.getSDKVersion();
+		return Settings.getSdkVersion();
 	}
 
 	public void setSDKVersion(String version){
-        Settings.setSDKVersion(version);
+        //Settings.setSDKVersion(version);
     }
 
 	private boolean networkReachable() {
