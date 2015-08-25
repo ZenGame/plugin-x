@@ -253,16 +253,20 @@ public class UserFacebook implements InterfaceUser{
                     Request request = new Request(Session.getActiveSession(), path, parameter, httpmethod, new Request.Callback() {
                         
                         @Override
-                        public void onCompleted(Response response) {
+                        public void onCompleted(final Response response) {
                             LogD(response.toString());
                             
-                            FacebookRequestError error = response.getError();
+                            final FacebookRequestError error = response.getError();
                             
-                            if(error == null){
-                            	nativeRequestCallback(0, response.getGraphObject().getInnerJSONObject().toString(), nativeCallback);
-                            }else{
-                            	nativeRequestCallback(error.getErrorCode(), "{\"error_message\":\""+error.getErrorMessage()+"\"}", nativeCallback);
-                            }
+                            PluginWrapper.runOnGLThread(new Runnable() {
+                            	public void run() {
+                                    if(error == null){
+                                    	nativeRequestCallback(0, response.getGraphObject().getInnerJSONObject().toString(), nativeCallback);
+                                    }else{
+                                    	nativeRequestCallback(error.getErrorCode(), "{\"error_message\":\""+error.getErrorMessage()+"\"}", nativeCallback);
+                                    }
+                            	}
+                            });
                         }
                     });
                     request.executeAsync();

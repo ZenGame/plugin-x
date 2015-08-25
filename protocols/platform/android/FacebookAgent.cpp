@@ -25,6 +25,7 @@
 #include "FacebookAgent.h"
 #include "AgentManager.h"
 #include "PluginJniHelper.h"
+#include "PluginUtils.h"
 
 namespace cocos2d{namespace plugin{
 
@@ -32,6 +33,7 @@ extern "C" {
 JNIEXPORT void JNICALL Java_org_cocos2dx_plugin_UserFacebook_nativeRequestCallback(JNIEnv*  env, jobject thiz, jint ret, jstring msg, jint cbIndex)
 {
 	std::string stdMsg = PluginJniHelper::jstring2string(msg);
+	//PluginUtils::outputLog("FacebookAgent", "nativeRequestCallback(), Get callback ret: %d message: %s callback: %d", ret, stdMsg.c_str(), cbIndex);
 	FacebookAgent::FBCallback callback = FacebookAgent::getInstance()->getRequestCallback(cbIndex);
 	callback(ret, stdMsg);
 }
