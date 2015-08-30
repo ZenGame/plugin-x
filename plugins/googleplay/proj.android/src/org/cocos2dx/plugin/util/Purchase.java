@@ -56,6 +56,7 @@ public class Purchase {
     public String getDeveloperPayload() { return mDeveloperPayload; }
     public String getToken() { return mToken; }
     public String getOriginalJson() { return mOriginalJson; }
+    public JSONObject getOriginalJsonObj() throws JSONException { return new JSONObject(mOriginalJson); }
     public String getSignature() { return mSignature; }
 
     @Override

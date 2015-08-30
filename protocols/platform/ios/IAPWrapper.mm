@@ -32,25 +32,41 @@ using namespace cocos2d::plugin;
 
 @implementation IAPWrapper
 
-+ (void) onPayResult:(id) obj withRet:(IAPResult) ret withMsg:(NSString*) msg
++ (void) onPayResult:(id) obj withRet:(IAPResult) ret withTransaction:(SKPaymentTransaction*)transaction withMsg:(NSString*) msg
 {
     PluginProtocol* plugin = PluginUtilsIOS::getPluginPtr(obj);
     ProtocolIAP* iapPlugin = dynamic_cast<ProtocolIAP*>(plugin);
     ProtocolIAP::ProtocolIAPCallback callback = iapPlugin->getCallback();
-    const char* chMsg = [msg UTF8String];
     PayResultCode cRet = (PayResultCode) ret;
+    
     if (iapPlugin) {
-        iapPlugin->onPayResult(cRet, chMsg);
-        if(callback){
-            std::string stdmsg(chMsg);
-            callback(cRet,stdmsg);
+        NSDictionary *infoDict = [[[NSDictionary alloc]
+                                   initWithObjectsAndKeys:@"payResult",@"type",
+                                   transaction.payment.productIdentifier, @"sku",
+                                   msg, @"msg",
+                                   nil] autorelease];
+        NSString *resultJson = [ParseUtils NSDictionaryToNSString:infoDict];
+        
+        if (resultJson == nil )
+        {
+            std::string errMsg = "Can not generate pay result";
+            iapPlugin->onPayResult((PayResultCode)kPayFail, errMsg.c_str());
+
+            if (callback)
+                callback(kPayFail, errMsg);
+            return;
+        }
+        
+        std::string stdmsg([resultJson UTF8String]);
+        iapPlugin->onPayResult(cRet, stdmsg.c_str());
+        if (callback){
+            callback(cRet, stdmsg);
         }
     }
     else {
         PluginUtilsIOS::outputLog("Can't find the C++ object of the IAP plugin");
     }
 }
-
 + (NSString *) priceAsString:(SKProduct*) product
 {
     NSNumberFormatter *formatter = [[NSNumberFormatter alloc] init];
@@ -63,17 +79,21 @@ using namespace cocos2d::plugin;
     return str;
 }
 
++(NSArray*) convertSKProductsToLocalizedProduct:(NSArray*) products
+{
+    NSMutableArray* convertedProducts = [[[NSMutableArray alloc] init] autorelease];
+    for(SKProduct *product in products){
+        NSDictionary* info = [NSDictionary dictionaryWithObjectsAndKeys:product.productIdentifier, @"productIdentifier", product.localizedTitle, @"localizedTitle", product.localizedDescription, @"localizedDescription", [self priceAsString: product], @"localizedPrice", nil];
+        
+        [convertedProducts addObject:info];
+    }
+    return convertedProducts;
+}
+
 +(NSString*) convertSKProductsToJSON:(NSArray*) products
 {
     if (products) {
-        NSMutableArray* convertedProducts = [[[NSMutableArray alloc] init] autorelease];
-        for(SKProduct *product in products){
-            NSDictionary* info = [NSDictionary dictionaryWithObjectsAndKeys:product.productIdentifier, @"productIdentifier", product.localizedTitle, @"localizedTitle", product.localizedDescription, @"localizedDescription", [self priceAsString: product], @"localizedPrice", nil];
-            
-            [convertedProducts addObject:info];
-        }
-        
-        return [ParseUtils NSDictionaryToNSString:convertedProducts];
+        return [ParseUtils NSDictionaryToNSString:[self convertSKProductsToLocalizedProduct:products]];
     }
     
     return @"[]";
@@ -99,15 +119,25 @@ using namespace cocos2d::plugin;
             }
             listener->onRequestProductsResult((IAPProductRequest )ret,pdlist);
         }else if(callback){
-            NSString *productInfo = [self convertSKProductsToJSON: products]; //[ParseUtils NSDictionaryToNSString:products];
+            
+            NSArray* convertedProducts = [self convertSKProductsToLocalizedProduct:products];
+            NSDictionary *infoDict = [[[NSDictionary alloc]
+                                         initWithObjectsAndKeys:@"productResult",@"type",
+                                         convertedProducts,@"msg",
+                                         nil] autorelease];
+            
+            NSString *productInfo = [ParseUtils NSDictionaryToNSString:infoDict];
             const char *charProductInfo;
             if (productInfo != nil){
                 charProductInfo =[productInfo UTF8String];
+                
+                std::string stdstr(charProductInfo);
+                callback((IAPProductRequest )ret, stdstr);
+                
             }else{
-                charProductInfo = "[]";
+                std::string retStr("Parse product info failed");
+                callback((IAPProductRequest )IAPProductRequest::RequestFail, retStr);
             }
-            std::string stdstr(charProductInfo);
-            callback((IAPProductRequest )ret,stdstr);
         }
     } else {
         PluginUtilsIOS::outputLog("Can't find the C++ object of the IAP plugin");

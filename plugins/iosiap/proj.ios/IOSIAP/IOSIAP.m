@@ -144,18 +144,17 @@ NSArray * _transactionArray;
     }
 
     if(_isServerMode){
-        [IAPWrapper onPayResult:self withRet:PaymentTransactionStatePurchased withMsg:receipt];
+        [IAPWrapper onPayResult:self withRet:PaymentTransactionStatePurchased withTransaction:transaction withMsg:receipt];
     }else{
         [self finishTransaction: transaction.payment.productIdentifier];
-        [IAPWrapper onPayResult:self withRet:PaymentTransactionStatePurchased withMsg:receipt];
+        [IAPWrapper onPayResult:self withRet:PaymentTransactionStatePurchased withTransaction:transaction withMsg:receipt];
     }
-    
 }
 
 - (void)restoreTransaction:(SKPaymentTransaction *)transaction {
     OUTPUT_LOG(@"restoreTransaction...");
     [self finishTransaction:transaction.payment.productIdentifier];
-    [IAPWrapper onPayResult:self withRet:PaymentTransactionStateRestored withMsg:@""];
+    [IAPWrapper onPayResult:self withRet:PaymentTransactionStateRestored withTransaction:transaction withMsg:@""];
 }
 
 - (void)failedTransaction:(SKPaymentTransaction *)transaction {
@@ -167,7 +166,7 @@ NSArray * _transactionArray;
     }
     
     [self finishTransaction:transaction.payment.productIdentifier];
-    [IAPWrapper onPayResult:self withRet:PaymentTransactionStateFailed withMsg:@""];
+    [IAPWrapper onPayResult:self withRet:PaymentTransactionStateFailed withTransaction:transaction withMsg:@""];
 }
 
 - (void)restoreCompletedTransactions {

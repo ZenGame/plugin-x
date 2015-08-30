@@ -39,6 +39,7 @@ import org.cocos2dx.plugin.util.IabResult;
 import org.cocos2dx.plugin.util.Inventory;
 import org.cocos2dx.plugin.util.Purchase;
 import org.cocos2dx.plugin.util.SkuDetails;
+import org.json.JSONObject;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -221,38 +222,53 @@ public class IAPGooglePlay implements InterfaceIAP, PluginListener {
         PluginWrapper.addListener(this);
     }
 
-
-
     // Listener that's called when we finish querying the items and subscriptions we own
     IabHelper.QueryInventoryFinishedListener mGotInventoryListener = new IabHelper.QueryInventoryFinishedListener() {
         public void onQueryInventoryFinished(IabResult result, Inventory inventory) {
             Log.d(TAG, "Query inventory finished.");
 
             // Have we been disposed of in the meantime? If so, quit.
-            if (mHelper == null) return;
+            if (mHelper == null){
+            	IAPWrapper.onProductInfo(mAdapter, IAPWrapper.RequestFail, "IABHelper is invalid");
+            	return;
+            }
 
             // Is it a failure?
             if (result.isFailure()) {
                 Log.e(TAG, "Failed to query inventory: " + result);
+            	IAPWrapper.onProductInfo(mAdapter, IAPWrapper.RequestFail, result.getMessage());
                 return;
             }
 
             Log.d(TAG, "Query inventory was successful.");
 
             //start. you can add you own query code here for flushing if you wish
-            String allSkuDetails = "[]";
+
             try
             {
-            	allSkuDetails = inventory.getAllSkuJson();
+                JSONObject skuResult = new JSONObject();
+                skuResult.put("type", "productResult");
+                skuResult.put("msg", inventory.getAllSkuJsonObj());
+            	String allSkuDetails = skuResult.toString();
+            	
             	Log.d(TAG, "All sku details got: " + allSkuDetails);
             	IAPWrapper.onProductInfo(mAdapter, IAPWrapper.RequestSuccees, allSkuDetails);
             }
             catch(Exception e)
             {
-            	LogE("Can not get sku details from inventory", e);    
+            	LogE("Can not get sku details from inventory", e);
+                String allSkuDetails = "{}";
             	IAPWrapper.onProductInfo(mAdapter, IAPWrapper.RequestFail, allSkuDetails);
             }
             //end
+            
+        	List<String> ownedSkus = inventory.getAllOwnedSkus();
+        	for (String sku : ownedSkus)
+        	{
+        		Log.d(TAG, "Process owned sku: " + sku);
+        		Purchase purchase = inventory.getPurchase(sku);
+        		processPurchasedItem(purchase);
+        	}
         }
     };
 
@@ -289,6 +305,26 @@ public class IAPGooglePlay implements InterfaceIAP, PluginListener {
 
         return true;
     }
+    
+    void processPurchasedItem(Purchase purchase)
+    {
+        try 
+        {
+            JSONObject obj = new JSONObject();
+            obj.put("type", "payResult");
+            obj.put("sku", purchase.getSku());
+            obj.put("msg", purchase.getOriginalJson());
+            
+            succeedPurchase(obj.toString());
+            
+            //Auto consume the purchase
+            mHelper.consumeAsync(purchase, mConsumeFinishedListener);
+        }
+        catch (Exception e)
+        {
+        	failPurchase(e.getMessage());
+        }
+    }
 
     // Callback for when a purchase is finished
     IabHelper.OnIabPurchaseFinishedListener mPurchaseFinishedListener = new IabHelper.OnIabPurchaseFinishedListener() {
@@ -304,10 +340,7 @@ public class IAPGooglePlay implements InterfaceIAP, PluginListener {
             else {
                 Log.d(TAG,"Success!");
                 
-                succeedPurchase(purchase.getOriginalJson());
-
-                //Auto consume the purchase
-                mHelper.consumeAsync(purchase, mConsumeFinishedListener);
+                processPurchasedItem(purchase);
             }
         }
     };
@@ -330,7 +363,6 @@ public class IAPGooglePlay implements InterfaceIAP, PluginListener {
 
     void succeedPurchase(String msg) {
         IAPWrapper.onPayResult(mAdapter, IAPWrapper.PAYRESULT_SUCCESS, msg);
-        
     }
 
     void failPurchase(String msg) {

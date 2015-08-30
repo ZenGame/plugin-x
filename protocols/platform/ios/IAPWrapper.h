@@ -24,6 +24,7 @@ THE SOFTWARE.
 
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
+#import <StoreKit/StoreKit.h>
 
 typedef enum {
     PaymentTransactionStatePurchased = 0,
@@ -42,6 +43,6 @@ typedef enum {
     
 }
 
-+ (void) onPayResult:(id) obj withRet:(IAPResult) ret withMsg:(NSString*) msg;
++ (void) onPayResult:(id) obj withRet:(IAPResult) ret withTransaction:(SKPaymentTransaction*)transaction withMsg:(NSString*) msg;
 +(void) onRequestProduct:(id)ojb withRet:(ProductRequest) ret withProducts:(NSArray *)products;
 @end

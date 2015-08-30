@@ -67,7 +67,7 @@ public class Inventory {
     }
 
     /** Returns a list of all owned product IDs. */
-    List<String> getAllOwnedSkus() {
+    public List<String> getAllOwnedSkus() {
         return new ArrayList<String>(mPurchaseMap.keySet());
     }
 
@@ -97,12 +97,17 @@ public class Inventory {
 		return mSkuMap;
 	}
 	
-	public String getAllSkuJson() throws JSONException {
+	public JSONArray getAllSkuJsonObj() throws JSONException {
 		JSONArray array = new JSONArray();
 		for (SkuDetails detail : mSkuMap.values())
 		{
 			array.put(detail.getJsonObj());
 		}
+		return array;
+	}
+	
+	public String getAllSkuJsonStr() throws JSONException {
+		JSONArray array = getAllSkuJsonObj();
 		return array.toString();
 	}
 }

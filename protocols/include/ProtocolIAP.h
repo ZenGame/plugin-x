@@ -105,7 +105,7 @@ public:
     @brief pay result callback
     */
     void onPayResult(PayResultCode ret, const char* msg);
-
+    
     /**
     @brief set callback function
     */
@@ -121,12 +121,14 @@ public:
     {
     	return _callback;
     }
+    
 protected:
     static bool _paying;
 
     TProductInfo _curInfo;
     PayResultListener* _listener;
     ProtocolIAPCallback _callback;
+    ProtocolIAPCallback _info_callback;
 };
 
 }} // namespace cocos2d { namespace plugin {
